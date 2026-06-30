@@ -1,5 +1,11 @@
 2026-06-30
-- Added AI-style note assistance to the app, including automatic title suggestions based on note content.
+Before changes:
+- Basic note app with a simple form and list layout.
+- Notes were stored only through a backend API dependency.
+- No AI-style suggestions, categories, or smart guidance.
+
+After changes:
+- Added AI-style note assistance, including automatic title suggestions based on note content.
 - Introduced note classification for Work, Task, Idea, and Reflection categories.
 - Added a live assistant preview that recommends the next step for each note while typing.
 - Enhanced note cards with category and action badges for better organization and readability.
