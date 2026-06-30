@@ -1,4 +1,3 @@
-// components/NoteList.js
 import React from 'react';
 import Note from './Note';
 
@@ -16,6 +15,8 @@ const NoteList = ({ notes, onDeleteNote }) => {
           title={note.title}
           text={note.text}
           date={note.date}
+          category={note.category}
+          action={note.action}
           onDeleteNote={onDeleteNote}
         />
       ))}

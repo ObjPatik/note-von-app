@@ -1,0 +1,6 @@
+2026-06-30
+- Added AI-style note assistance to the app, including automatic title suggestions based on note content.
+- Introduced note classification for Work, Task, Idea, and Reflection categories.
+- Added a live assistant preview that recommends the next step for each note while typing.
+- Enhanced note cards with category and action badges for better organization and readability.
+- Updated the overall UI styling to support the new assistant experience with a more polished layout.

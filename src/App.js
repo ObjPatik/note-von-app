@@ -1,84 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import NoteList from './components/NoteList';
-import NoteForm from './components/NoteForm';
-import Header from './components/Header';
+import React, { useEffect, useState } from 'react';
 import './App.css';
+import Header from './components/Header';
+import NoteForm from './components/NoteForm';
+import NoteList from './components/NoteList';
 
-// Base URL of your backend API service
-const API_BASE_URL = 'http://localhost:8080/api/notes';
+const STORAGE_KEY = 'notify-notes';
+
+const getNoteMetadata = (title, text) => {
+  const cleanTitle = title?.trim();
+  const cleanText = text?.trim() || '';
+  const titlePreview = cleanTitle || cleanText.split(/\s+/).slice(0, 5).join(' ') || 'Untitled Note';
+
+  const lowerText = cleanText.toLowerCase();
+  let category = 'General';
+  let action = 'Capture and review later';
+
+  if (/meeting|standup|client|project|deadline|agenda|team/.test(lowerText)) {
+    category = 'Work';
+    action = 'Follow up after the meeting';
+  } else if (/todo|task|reminder|schedule|plan|deadline/.test(lowerText)) {
+    category = 'Task';
+    action = 'Turn this into an action list';
+  } else if (/idea|brainstorm|creative|concept|innovation/.test(lowerText)) {
+    category = 'Idea';
+    action = 'Expand this idea later';
+  } else if (/journal|reflection|feeling|mood|thought/.test(lowerText)) {
+    category = 'Reflection';
+    action = 'Keep this for personal review';
+  }
+
+  return {
+    title: titlePreview,
+    category,
+    action,
+  };
+};
 
 function App() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 1. GET: Fetch all notes from the backend database on load
   useEffect(() => {
-    fetch(API_BASE_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error('Failed to fetch notes.');
-        return response.json();
-      })
-      .then((data) => {
-        setNotes(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+    try {
+      const savedNotes = window.localStorage.getItem(STORAGE_KEY);
+      if (savedNotes) {
+        setNotes(JSON.parse(savedNotes));
+      }
+    } catch (err) {
+      setError('Unable to load saved notes.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // 2. POST: Send a new note to the backend database
+  useEffect(() => {
+    if (!loading) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    }
+  }, [notes, loading]);
+
   const addNote = (title, text) => {
-    const newNotePayload = {
-      title: title || 'Untitled Note',
-      text: text
+    const metadata = getNoteMetadata(title, text);
+    const newNote = {
+      id: Date.now(),
+      title: metadata.title,
+      text,
+      date: new Date().toLocaleString(),
+      category: metadata.category,
+      action: metadata.action,
     };
 
-    fetch(API_BASE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newNotePayload),
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error('Failed to save note.');
-        return response.json();
-      })
-      .then((savedNote) => {
-        // Prepend the newly created note (returned with its DB ID) to the UI state
-        setNotes([savedNote, ...notes]);
-      })
-      .catch((err) => alert(err.message));
+    setNotes((prevNotes) => [newNote, ...prevNotes]);
   };
 
-  // 3. DELETE: Remove a note from the backend database by ID
   const deleteNote = (id) => {
-    fetch(`${API_BASE_URL}/${id}`, {
-      method: 'DELETE',
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error('Failed to delete note.');
-        // Remove from local state if backend deletion succeeded
-        setNotes(notes.filter((note) => note.id !== id));
-      })
-      .catch((err) => alert(err.message));
+    setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
   };
 
   return (
     <div className="app-container">
-      <Header />
-      <div className="main-content">
-        <NoteForm onAddNote={addNote} />
-        
-        {loading && <p>Loading your notes from the database...</p>}
-        {error && <p style={{ color: '#ef4444' }}>Error: {error}</p>}
-        
-        {!loading && !error && (
-          <NoteList notes={notes} onDeleteNote={deleteNote} />
-        )}
+      <div className="app-shell">
+        <Header />
+        <div className="main-content">
+          <div className="content-grid">
+            <NoteForm onAddNote={addNote} />
+
+            <section className="notes-panel">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Workspace</p>
+                  <h3>Recent notes</h3>
+                </div>
+                <span className="note-count">{notes.length} saved</span>
+              </div>
+
+              {loading && <div className="status-card">Loading your notes locally...</div>}
+              {error && <div className="status-card error">Error: {error}</div>}
+
+              {!loading && !error && <NoteList notes={notes} onDeleteNote={deleteNote} />}
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   );
